@@ -36,7 +36,7 @@ export interface config {
   dynamic: boolean,
   dynamicEnabled?: boolean,
   announcedDisabledDynamic?: boolean,
-  presence?: PresenceData
+  presence?: any
 }
 
 export interface Interaction extends MessageInteraction {
@@ -86,8 +86,8 @@ export interface event { run: (...args: ClientEvents[keyof ClientEvents]) => Awa
 
 export interface getInteractionArgs { [name: string]: string}
 
-export type colors = "black" | "red" | "green" | "yellow" | "blue" | "magenta" | "cyan" | "white" | "gray" | "grey" | "brightRed" | "brightGreen" | "brightYellow" | "brightBlue" | "brightMagenta" | "brightCyan" | "brightWhite"
-export type bgColors = "black" | "red" | "green" | "yellow" | "blue" | "magenta" | "cyan" | "white" | "gray" | "grey" | "brightRed" | "brightGreen" | "brightYellow" | "brightBlue" | "brightMagenta" | "brightCyan" | "brightWhite"
+export type colors = "black" | "red" | "green" | "yellow" | "blue" | "magenta" | "cyan" | "white" | "gray" | "grey" //| "brightRed" | "brightGreen" | "brightYellow" | "brightBlue" | "brightMagenta" | "brightCyan" | "brightWhite"
+export type bgColors = "black" | "red" | "green" | "yellow" | "blue" | "magenta" | "cyan" | "white" | "gray" | "grey" //| "brightRed" | "brightGreen" | "brightYellow" | "brightBlue" | "brightMagenta" | "brightCyan" | "brightWhite"
 
 export type registerCommandsArgs = { globally: true, guild?: never } | { globally: false, guild: Guild }
 export type paths = { commands: string, events: string}
