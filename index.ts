@@ -17,11 +17,11 @@ const bot = new Bot([
   dynamic: true,
   presence: {
     status: "dnd",
-    activities: [{
+    activity: {
       type: "STREAMING",
       name: "Arthur pelado 2022",
       url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-    }]
+    }
   }
 })
 
