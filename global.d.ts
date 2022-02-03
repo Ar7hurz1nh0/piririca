@@ -27,16 +27,13 @@ export interface fileInterface {
   attachment: string
 }
 
-export interface voiceSessionStore {
-  [guildId: string]: void | voiceSession,
-  
-}
+export interface voiceSessionStore { [guildId: string]: void | voiceSession }
 
 export interface config {
   dynamic: boolean,
   dynamicEnabled?: boolean,
   announcedDisabledDynamic?: boolean,
-  presence?: any
+  presence?: PresenceData
 }
 
 export interface Interaction extends MessageInteraction {
@@ -86,12 +83,13 @@ export interface event { run: (...args: ClientEvents[keyof ClientEvents]) => Awa
 
 export interface getInteractionArgs { [name: string]: string}
 
-export type colors = "black" | "red" | "green" | "yellow" | "blue" | "magenta" | "cyan" | "white" | "gray" | "grey" //| "brightRed" | "brightGreen" | "brightYellow" | "brightBlue" | "brightMagenta" | "brightCyan" | "brightWhite"
-export type bgColors = "black" | "red" | "green" | "yellow" | "blue" | "magenta" | "cyan" | "white" | "gray" | "grey" //| "brightRed" | "brightGreen" | "brightYellow" | "brightBlue" | "brightMagenta" | "brightCyan" | "brightWhite"
+export type colors = "black" | "red" | "green" | "yellow" | "blue" | "magenta" | "cyan" | "white" | "gray" | "grey" | "redBright" | "greenBright" | "yellowBright" | "blueBright" | "magentaBright" | "cyanBright" | "whiteBright" | "blackBright"
+export type bgColors = "black" | "red" | "green" | "yellow" | "blue" | "magenta" | "cyan" | "white" | "gray" | "grey" | "redBright" | "greenBright" | "yellowBright" | "blueBright" | "magentaBright" | "cyanBright" | "whiteBright" | "blackBright"
 
 export type registerCommandsArgs = { globally: true, guild?: never } | { globally: false, guild: Guild }
 export type paths = { commands: string, events: string}
 export type auth = { token: string, applicationID: string }
+
 export interface isEventEnabled { [event: string]: boolean }
 
 export class Bot {
@@ -107,7 +105,7 @@ export class Bot {
   //private readonly rest: REST
   //private readonly events: event[]
 
-  public get login(): Promise<string>
+  public login(): void
   //private get loadCommands(): commandInterface[]
   //private get loadEvents(): event[]
 

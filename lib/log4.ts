@@ -1,5 +1,5 @@
 import { log as log1, error as logE1, warn as logW1 } from 'console'
-import colors from 'colors';
+import colors from 'chalk';
 import path from 'path';
 import type { colors as Colors, bgColors } from 'global';
 
@@ -95,7 +95,7 @@ function logW(message: unknown, stack: string | void): void {
 }
 
 function logE(message: unknown, stack: string | void | null | undefined, Throw: boolean | void): void {
-  logE1(colors.red(`[${date().join(":")}] [${typeof stack === "string" ? stack : getStack()}|${Throw ? "FATAL" : "ERROR"}]: ${messageHandler(message).replace("Error: ", "")}\n${getFullStack()}`))
+  logE1(colors.red(`[${date().join(":")}] [${typeof stack === "string" ? stack : getStack()}|${Throw ? "FATAL" : "ERROR"}]: ${messageHandler(message).replace("Error: ", "")}`))
   if (typeof Throw === "boolean" && Throw) throw new Error(String(messageHandler(message)))
 }
 
@@ -158,7 +158,7 @@ export default function (...args: any[ ]) {
 
 export function warn(...args: string[ ]) {
   [...args].forEach((arg) => {
-    arg = arg.replace(/\$c (\w+) (.+?)\$\$/g, (str: any, color: Colors, content: any) => {
+    arg = arg.replace(/\$c (\w+) (.+?)\$\$/g, (str: any, color: Colors, content: string) => {
       return colors[color](content)
     })
     arg = arg.replace(/\#c (\w+) (.+?)\#\#/g, (str: any, color: Colors, content: any) => {
