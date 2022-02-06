@@ -6,6 +6,7 @@ import log, { warn, error } from "./lib/log4";
 import { REST } from '@discordjs/rest'
 import { Routes } from 'discord-api-types/v9'
 import { SlashCommandBuilder } from '@discordjs/builders'
+import Server from "./lib/server";
 
 import type {
   commandInterface,
@@ -61,6 +62,8 @@ export default class Bot implements BotInterface {
     this.applicationID = auth.applicationID
     this.rest = new REST({ version: '9'}).setToken(this.token)
     this.registerCommands({ globally: true })
+
+
 
     const files = {
       commands: watch(this.paths.commands, { persistent: true, awaitWriteFinish: true, ignoreInitial: true }),

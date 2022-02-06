@@ -6,7 +6,6 @@ import { prompt } from 'inquirer'
 import log, { warn, error } from './lib/log4'
 import { randomBytes } from 'crypto'
 import { ActivityTypes } from 'discord.js/typings/enums';
-import server from './lib/server'
 
 type config = {
   token: string,
@@ -110,12 +109,12 @@ async function verifyConfig(): Promise<void> {
 function init(): void {
   const config = JSON.parse(readFileSync('./.config.json', 'utf8'))
   for (const key in config) {
-    const configKeys = ['token', 'appid', 'command', 'event', 'status', 'dynamic', 'activity', 'name', 'url']
+    const configKeys = ['token', 'appid', 'command', 'event', 'status', 'dynamic', 'activity', 'name', 'url', 'webserver', 'port']
     if (configKeys.find(x => x === key)) continue
     else switch (key) {
       default:
         process.env[key.toUpperCase()] = config[key]
-        log(`$c green Pushed $$$c cyan ${key}$$$c green  to the Enviroment variables$$ as [$c magenta ${key.toUpperCase()}$$$c green ]$$`)
+        log(`$c green Pushed $$$c cyan ${key}$$$c green  to the Enviroment variables as [$$$c magenta ${key.toUpperCase()}$$$c green ]$$`)
         break
       }
     
@@ -217,43 +216,33 @@ if(firstStart()) {
 }
 else (async () => await verifyConfig())().then(() => { init(); startBot( JSON.parse( readFileSync('./.config.json', 'utf8') ) ) })
 
-const bot = new Bot([
-  Intents.FLAGS.GUILDS,
-  Intents.FLAGS.GUILD_MEMBERS,
-  Intents.FLAGS.GUILD_MESSAGES,
-  Intents.FLAGS.GUILD_VOICE_STATES
-], {
-  token: config.token,
-  applicationID: config.appid
-}, {
-  commands: config.command,
-  events: config.event
-}, {
-  dynamic: config.dynamic,
-  presence: {
-    status: config.status,
-    activities: [{
-      type: config.activity as ExcludeEnum<typeof ActivityTypes, "CUSTOM">,
-      name: config.name,
-      url: config.url
-    }]
-  }
-})
-
 function startBot(config: config) {
   warn("$c green Starting bot$$")
+  const bot = new Bot([
+    Intents.FLAGS.GUILDS,
+    Intents.FLAGS.GUILD_MEMBERS,
+    Intents.FLAGS.GUILD_MESSAGES,
+    Intents.FLAGS.GUILD_VOICE_STATES
+  ], {
+    token: config.token,
+    applicationID: config.appid
+  }, {
+    commands: config.command,
+    events: config.event
+  }, {
+    dynamic: config.dynamic,
+    server: {
+      webserver: config.webserver,
+      port: config.port
+    },
+    presence: {
+      status: config.status,
+      activities: [{
+        type: config.activity as ExcludeEnum<typeof ActivityTypes, "CUSTOM">,
+        name: config.name,
+        url: config.url
+      }]
+    }
+  })
   bot.login()
-  try {
-    process.env.BOT = bot
-    log("Now the bot is available in the Enviroment Variables")
-  }
-  catch (e: any) {
-    error(e.message)
-  }
-  if(process.env.SERVER) {
-    warn("$c green Starting webserver")
-    server()
-  }
 }
-
-export default bot

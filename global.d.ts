@@ -9,13 +9,6 @@ export interface processEnv {
   KEY: string
 }
 
-declare namespace NodeJS {
-  interface ProcessEnv extends processEnv {}
-  interface Process {
-    env: ProcessEnv
-  }
-}
-
 export interface createVoiceSessionConfig {
   readonly channelId: string,
   readonly guildId: string,
@@ -31,6 +24,10 @@ export interface voiceSessionStore { [guildId: string]: void | voiceSession }
 
 export interface config {
   dynamic: boolean,
+  server: {
+    webserver: boolean,
+    port?: number
+  },
   dynamicEnabled?: boolean,
   announcedDisabledDynamic?: boolean,
   presence?: PresenceData

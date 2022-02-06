@@ -5,7 +5,20 @@ import log from "../../lib/log4"
 export default function (this: Bot, message: Message) {
   if(message.author.bot) return;
   if (message === null || message.guild === null) return;
-  let reply = ''
+  let reply = `<${message.author.tag} @${message.guild.name}#${message.guild.channels.cache.get(message.channel.id)?.name}>`
+  function add(str: string) {
+    if (str === '') return;
+    reply += '\n    ' + str
+  }
+  if (message.type === 'REPLY') add(`Replying to ${message.mentions.repliedUser?.tag}`)
+  const mentions = message.content.match(/<@!?([\d])+>/g) 
+  if (mentions) {
+    const parsedMentions = mentions.map(m => [message.guild?.members.cache.get(m.replace(/<@!?/g, '').replace(/>/g, ''))?.user.tag, m])
+    for (const [user, mention] of parsedMentions) {
+      message.content = message.content.replace(`${mention}`, `<@${user}>`)
+    }
+  }
+  add(message.content)
   if (message.attachments.size > 0) {
     const type = message.attachments.map(a => a.name?.split('.').pop())
     for (let t = 0; t < type.length; t++) {
@@ -23,9 +36,10 @@ export default function (this: Bot, message: Message) {
       ) type[t] = 'Audio'
       else type[t] = 'File'
     }
-    let i = 0
-    log(`<${message.author.tag}> ${message.content}
-    ${message.attachments.map((a) => {i++; return `[${type[i-1]} ${a.name}]`}).join('\n    ')}`)
+    add("Attachments:")
+    for (let i = 0; i < message.attachments.size; i++) {
+      add(`  [${type[i]} ${message.attachments.at(i)?.name}]`)
+    }
   }
-  else log(`<${message.author.tag}> ${message.content}`)
+  log(reply)
 }
