@@ -54,12 +54,12 @@ export default {
         }
       });
       connection.on(VoiceConnectionStatus.Ready, async () => {
-        await interaction.editReply(`Successfully connected to voice channel!`);
-        session.playFile(join(homeDir, theChosenOne))
-        await interaction.editReply(`Playing ${theChosenOne}`);
-        if(interaction.channel !== null) {
+        if (interaction.channel !== null) {
+          await interaction.editReply(`Successfully connected to voice channel!`);
+          session.playFile(join(homeDir, theChosenOne))
+          await interaction.editReply(`Playing ${theChosenOne}`);
           await interaction.channel.send(`From ${files.length} files, the chosen one was ${theChosenOne}`);
-          if (statSync(join(homeDir, theChosenOne)).size > 1024**2*8) interaction.channel.send(`Could not send source file: file is too large`);
+          if (statSync(join(homeDir, theChosenOne)).size > 1024**2*8) interaction.channel.send(`Could not send source file: file is too large (${statSync(join(homeDir, theChosenOne)).size / 1024**2}MB)`);
           else interaction.channel.send({content: `Source file:`, files: [{ attachment: join(homeDir, theChosenOne), name: theChosenOne }] });
         }
       })

@@ -1,5 +1,7 @@
 import { Bot, commandInterface, Interaction } from "global"
-import { error } from "../../lib/log4"
+import { Logger } from "../../lib/log4"
+
+const logger = new Logger("interactionCreate", { hideFile: true })
 
 export default function (this: Bot, interaction: Interaction) {
   if (!interaction.isCommand()) return
@@ -12,6 +14,6 @@ export default function (this: Bot, interaction: Interaction) {
     command.run(interaction, this.getArgs(command.choices, interaction as any as Interaction))
   }
   catch (e)  {
-    error(e);
+    logger.error(e);
   }
 }

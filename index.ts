@@ -1,9 +1,9 @@
 import './lib/dotenv';
-import Bot from './bot'
+import Bot from './lib/bot'
 import { ExcludeEnum, Intents, PresenceStatusData } from 'discord.js';
 import { readFileSync, appendFileSync, writeFileSync } from 'fs'
 import { prompt } from 'inquirer'
-import log, { warn, error } from './lib/log4'
+import { log, warn, error } from './lib/log4'
 import { randomBytes } from 'crypto'
 import { ActivityTypes } from 'discord.js/typings/enums';
 
@@ -30,6 +30,8 @@ type Prompt = {
   choices?: string[]
 }
 
+const configKeys: Array<keyof config> = ['token', 'appid', 'command', 'event', 'status', 'dynamic', 'webserver', 'port', 'activity', 'name', 'url']
+
 function firstStart(): boolean {
   let config
   try {
@@ -42,54 +44,102 @@ function firstStart(): boolean {
   return false
 }
 
+function isNULL(conf: any): boolean {
+  switch (conf) {
+    case undefined: return true
+    case null: return true
+    case '': return true
+    default: return false
+  }
+}
+
+function keyof(key: string, obj: { [key: string]: any } | Array<any>): boolean {
+  if (obj instanceof Array) {
+    for (let i = 0; i < obj.length; i++) {
+      if (obj[i] === key) return true
+      else continue
+    }
+  }
+  else for (const keyin in obj) {
+    if (obj[key] === keyin) return true
+    else continue
+  }
+  return false
+}
+
+// for (let i = 0; i < configKeys.length; i++) {
+//   console.log(configKeys[i], keyof(configKeys[i], {
+//     token: '',
+//     appid: '',
+//     command: '',
+//     event: '',
+//     status: '',
+//     dynamic: '',
+//     activity: '',
+//     name: '',
+//     url: '',
+//     webserver: '' 
+//   }))
+// }
+
+async function getConfigKey(messages: {error: string, prompt: string, default: string}, type: string): Promise<string> {
+  error(messages.error)
+  return await sendPrompt(type, messages.prompt, messages.default)  
+}
+
 async function verifyConfig(): Promise<void> {
   const config: config = require('./.config.json')
   let modified = false
   warn("Verifying config...")
 
-  if (config.token === undefined || config.token === '') {
+  // for (let i = 0; i < configKeys.length; i++) {
+  //   if (keyof(configKeys[i], config) && isNULL(config[configKeys[i]]))
+  //   config['token'] = await getConfigKey({ error: '', prompt: '', default: '' }, 'input')
+  // }
+
+  if (isNULL(config.token)) {
     error("Token not found!")
     config.token = await sendPrompt('input', 'Enter your bot token:', r(24)+ '.' + r(6) + '.' + r(7) + '-' + r(19))
     modified = true
   } else log("$c green Token OK$$")
 
-  if (config.appid === undefined || config.appid === '') {
+  if (isNULL(config.appid)) {
     error('AppID is invalid!')
     config.appid = await sendPrompt('input', 'Enter your application ID:', rn(18))
     modified = true
   } else log("$c green AppID OK$$")
 
-  if (config.command === undefined || config.command === '') {
+  if (isNULL(config.command)) {
     error('Command path is invalid!')
     config.command = await sendPrompt('input', 'Enter the command path:', 'src/cmd')
     modified = true
   } else log("$c green Command path OK$$")
 
-  if (config.event === undefined || config.event === '') {
+  if (isNULL(config.event)) {
     error('Event path is invalid!')
     config.event = await sendPrompt('input', 'Enter the event path:', 'src/event')
     modified = true
   } else log("$c green Event path OK$$")
 
-  if (config.dynamic === undefined || config.dynamic as any === '') {
+  if (isNULL(config.dynamic)) {
     error('Dynamic reload is invalid!')
     config.dynamic = await sendPrompt('confirm', 'Enable dynamic reload?', true) === 'true' ? true : false
     modified = true
-  } else log("$c green Dynamic reload OK$$")
+  } else log("$c green Dynamic reload OK $$")
 
-  if (config.status === undefined || config.status as any === '') {
+  if (isNULL(config.status)) {
     error('Status is invalid!')
     config.status = await sendPrompt('list', 'Select your status:', 0, [ 'Online', 'Idle', 'Do Not Disturb' ]) as any
     modified = true
   } else log("$c green Status OK$$")
 
-  if (config.webserver === undefined || config.webserver as any === '') {
+  if (isNULL(config.webserver)) {
     error('Webserver is invalid!')
     config.webserver = await sendPrompt('confirm', 'Enable webserver?', true) === 'true' ? true : false
     modified = true
   }
 
-  if ((config.port === undefined || config.port as any === '') && config.webserver) {
+  if (isNULL(config.port) && config.webserver) {
     error('WebServer port is invalid!')
     config.port = Number(await sendPrompt('input', 'Enter the webserver port:', 3000))
     modified = true
@@ -105,6 +155,8 @@ async function verifyConfig(): Promise<void> {
     error(e.message)
   }
 }
+
+process.env.DEV
 
 function init(): void {
   const config = JSON.parse(readFileSync('./.config.json', 'utf8'))

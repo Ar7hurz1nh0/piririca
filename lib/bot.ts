@@ -2,11 +2,11 @@ import { Awaitable, Client, ClientEvents } from "discord.js";
 import { parse, join } from "path";
 import { watch } from "chokidar";
 import { readdirSync } from "fs";
-import log, { warn, error } from "./lib/log4";
+import { Logger } from "./log4";
 import { REST } from '@discordjs/rest'
 import { Routes } from 'discord-api-types/v9'
 import { SlashCommandBuilder } from '@discordjs/builders'
-import Server from "./lib/server";
+import Server from "./server";
 
 import type {
   commandInterface,
@@ -37,6 +37,8 @@ interface RESTcommand {
   dm_permission: null
 }
 
+const BotLogger = new Logger("Bot", { hideFile: true });
+
 export default class Bot implements BotInterface {
   public constructor (intents: ClientOptions["intents"][], auth: auth, paths: paths, config: config) {
     this.config = config;
@@ -52,18 +54,14 @@ export default class Bot implements BotInterface {
           try {
             this.events[event].run(...args as any)
           }
-          catch (e: any) {
-            error(e.message)
-          }
+          catch (e: any) { BotLogger.error(e.message) }
         })
-      warn(`$c green Enabled $$$c cyan ${this.events[event].name}$$ $c redBright event$$`)
+      BotLogger.warn(`$c green Enabled $$$c cyan ${this.events[event].name}$$ $c redBright event$$`)
     }
     this.token = auth.token
     this.applicationID = auth.applicationID
     this.rest = new REST({ version: '9'}).setToken(this.token)
     this.registerCommands({ globally: true })
-
-
 
     const files = {
       commands: watch(this.paths.commands, { persistent: true, awaitWriteFinish: true, ignoreInitial: true }),
@@ -76,19 +74,19 @@ export default class Bot implements BotInterface {
     files.commands.on("change", (file) => {
       if (!this.config.dynamic) {
         if (this.config.announcedDisabledDynamic) return
-        log(`$c red Dynamic reloads are disabled, skipping reload$$`)
+        BotLogger.log(`$c red Dynamic reloads are disabled, skipping reload$$`)
         this.config.announcedDisabledDynamic = true
         return
       }
       if (!this.config.dynamicEnabled) return
-      warn(`$c magenta Detected change in $$$c cyan ${parse(file).base}$$ $c yellowBright command$$`)
+      BotLogger.warn(`$c magenta Detected change in $$$c cyan ${parse(file).base}$$ $c yellowBright command$$`)
       const newCommand = this.reloadCommand(file)
       if (newCommand === undefined) return
       for (let i = 0; i < this.commands.length; i++) {
         if (this.commands[i].name === newCommand.name) {
           this.commands[i] = newCommand
           this.registerCommand(newCommand, this.applicationID)
-          log(`$c green Reloaded $$$c cyan ${newCommand.name}$$ $c yellowBright command$$`)
+          BotLogger.log(`$c green Reloaded $$$c cyan ${newCommand.name}$$ $c yellowBright command$$`)
           return
         }
       }
@@ -96,7 +94,7 @@ export default class Bot implements BotInterface {
     files.commands.on("add", (file) => {
       if (!this.config.dynamic) {
         if (this.config.announcedDisabledDynamic) return
-        log(`$c red Dynamic reloads are disabled, skipping command add$$`)
+        BotLogger.log(`$c red Dynamic reloads are disabled, skipping command add$$`)
         this.config.announcedDisabledDynamic = true
         return
       }
@@ -105,12 +103,12 @@ export default class Bot implements BotInterface {
       if (newCommand === undefined) return
       this.commands.push(newCommand)
       this.registerCommand(newCommand, this.applicationID)
-      log(`$c green Added $$$c cyan ${newCommand.name}$$ $c yellowBright command$$`)
+      BotLogger.log(`$c green Added $$$c cyan ${newCommand.name}$$ $c yellowBright command$$`)
     })
     files.commands.on("unlink", (file) => {
       if (!this.config.dynamic) {
         if (this.config.announcedDisabledDynamic) return
-        log(`$c red Dynamic reloads are disabled, skipping command remove$$`)
+        BotLogger.log(`$c red Dynamic reloads are disabled, skipping command remove$$`)
         this.config.announcedDisabledDynamic = true
         return
       }
@@ -118,12 +116,12 @@ export default class Bot implements BotInterface {
       for (let i = 0; i < this.commands.length; i++) {
         if (this.commands[i].name === parse(file).name) {
           const command = this.commands[i].name
-          delete require.cache[require.resolve(join(__dirname, file))]
+          delete require.cache[require.resolve(join(process.cwd(), file))]
           this.commands.splice(i, 1)
           try {
             this.deleteCommand(command)
-          } catch (e: any) { error(e.message) }
-          log(`$c red Removed $$$c cyan ${command}$$ $c yellowBright command$$`)
+          } catch (e: any) { BotLogger.error(e.message) }
+          BotLogger.log(`$c red Removed $$$c cyan ${command}$$ $c yellowBright command$$`)
           return
         }
       }
@@ -136,18 +134,18 @@ export default class Bot implements BotInterface {
     files.events.on("change", (file) => {
       if (!this.config.dynamic) {
         if (this.config.announcedDisabledDynamic) return
-        log(`$c red Dynamic reloads are disabled, skipping event reload$$`)
+        BotLogger.log(`$c red Dynamic reloads are disabled, skipping event reload$$`)
         this.config.announcedDisabledDynamic = true
         return
       }
       if (!this.config.dynamicEnabled) return
-      warn(`$c magenta Detected change in $$$c cyan ${parse(file).base}$$ $c redBright event$$`)
+      BotLogger.warn(`$c magenta Detected change in $$$c cyan ${parse(file).base}$$ $c redBright event$$`)
       const newEvent = this.reloadEvent(file)
       if (newEvent === undefined) return
       for (let i = 0; i < this.events.length; i++) {
         if (this.events[i].name === newEvent.name) {
           this.events[i].run = newEvent.run.bind(this)
-          log(`$c green Reloaded $$$c cyan ${newEvent.name}$$ $c redBright event$$`)
+          BotLogger.log(`$c green Reloaded $$$c cyan ${newEvent.name}$$ $c redBright event$$`)
           return
         }
       }
@@ -155,7 +153,7 @@ export default class Bot implements BotInterface {
     files.events.on("add", (file) => {
       if (!this.config.dynamic) {
         if (this.config.announcedDisabledDynamic) return
-        log(`$c red Dynamic reloads are disabled, skipping event add$$`)
+        BotLogger.log(`$c red Dynamic reloads are disabled, skipping event add$$`)
         this.config.announcedDisabledDynamic = true
         return
       }
@@ -180,13 +178,13 @@ export default class Bot implements BotInterface {
           }
         }
       }
-      log(`$c green Added $$$c cyan ${newEvent.name}$$ $c redBright event$$`)
+      BotLogger.log(`$c green Added $$$c cyan ${newEvent.name}$$ $c redBright event$$`)
       this.enableEvent(newEvent.name)
     })
     files.events.on("unlink", (file) => {
       if (!this.config.dynamic) {
         if (this.config.announcedDisabledDynamic) return
-        log(`$c red Dynamic reloads are disabled, skipping event remove$$`)
+        BotLogger.log(`$c red Dynamic reloads are disabled, skipping event remove$$`)
         this.config.announcedDisabledDynamic = true
         return
       }
@@ -194,9 +192,9 @@ export default class Bot implements BotInterface {
       for (const event of this.events) {
         if (event.name === parse(file).name) {
           const eventName = event.name
-          delete require.cache[require.resolve(join(__dirname, file))]
+          delete require.cache[require.resolve(join(process.cwd(), file))]
           this.disableEvent(eventName)
-          log(`$c red Removed $$$c cyan ${eventName}$$ $c redBright event$$`)
+          BotLogger.log(`$c red Removed $$$c cyan ${eventName}$$ $c redBright event$$`)
           return
         }
       }
@@ -220,7 +218,7 @@ export default class Bot implements BotInterface {
   }
 
   private get loadCommands(): commandInterface[] {
-    const PATH = join(__dirname, this.paths.commands)
+    const PATH = join(process.cwd(), this.paths.commands)
     const commandsFiles = readdirSync(PATH);
     const commands: commandInterface[] = []
     commandsFiles.forEach((file: any): void => {
@@ -231,57 +229,49 @@ export default class Bot implements BotInterface {
           if (cmd === undefined) throw new Error(`Command ${file} has no default export`);
           cmd.name = parse(file).name
           commands.push(cmd)
-          warn(`$c green Loaded $$$c cyan ${cmd.name}$$ $c yellowBright command$$`);
-        } catch (e) {
-          error(e);
-        }
+          BotLogger.warn(`$c green Loaded $$$c cyan ${cmd.name}$$ $c yellowBright command$$`);
+        } catch (e: any) { console.error(e) }
       }
     })
     return commands
   }
 
   private get loadEvents(): event[] {
-    const path = join(__dirname, this.paths.events)
+    const path = join(process.cwd(), this.paths.events)
     const eventsFiles = readdirSync(path);
     const events: event[] = []
     eventsFiles.forEach((file: any): void => {
       if (file.endsWith(".ts") || file.endsWith(".js")) {
         file = join(path, file);
         try {
-          const event: (...args: unknown[]) => Awaitable<void> = require(file).default;
+          const event: event["run"] = require(file).default;
           if (event === undefined) throw new Error(`Event ${parse(file).base} has no default export`);
           events.push({ run: event, name: parse(file).name as any })
-          log(`$c magentaBright Pushed$$ $c cyan ${parse(file).name}$$ $c magentaBright to event cache$$`);
-        } catch (e) {
-          error(e);
-        }
+          BotLogger.log(`$c magentaBright Pushed$$ $c cyan ${parse(file).name}$$ $c magentaBright to event cache$$`);
+        } catch (e: any) { BotLogger.error(e.message) }
       }
     })
     return events
   }
 
   private loadCommand(command: string): commandInterface | undefined {
-    const file = join(__dirname, command);
+    const file = join(process.cwd(), command);
     const cmd: commandInterface = require(file).default;
     try {
       if (cmd === undefined) throw new Error(`Command ${file} has no default export`);
       cmd.name = parse(file).name
-      warn(`Loaded $c cyan ${cmd.name}$$ $c yellowBright command$$`);
-    } catch (e) {
-      error(e);
-    }
+      BotLogger.warn(`Loaded $c cyan ${cmd.name}$$ $c yellowBright command$$`);
+    } catch (e: any) { BotLogger.error(e.message) }
     return cmd
   }
 
   private loadEvent(event: string): event | undefined {
-    const file = join(__dirname, event);
+    const file = join(process.cwd(), event);
     const evt: event = { run: require(file).default, name: parse(file).name as any }
     try {
       if (evt.run === undefined) throw new Error(`Event ${parse(file).base} has no default export`);
-      log(`Loaded $c cyan ${evt.name}$$ $c redBright event$$`);
-    } catch (e) {
-      error(e);
-    }
+      BotLogger.log(`Loaded $c cyan ${evt.name}$$ $c redBright event$$`);
+    } catch (e: any) { BotLogger.error(e.message) }
     return evt
   }
 
@@ -293,10 +283,10 @@ export default class Bot implements BotInterface {
           if (res[i].name === command) {
             this.rest.delete(Routes.applicationCommand(this.applicationID, res[i].id))
               .then(() => {
-                log(`$c red Deleted $$$c cyan ${res[i].name}$$ $c yellowBright command$$`);
+                BotLogger.log(`$c red Deleted $$$c cyan ${res[i].name}$$ $c yellowBright command$$`);
               })
               .catch((e: any) => {
-                error(e.message);
+                BotLogger.error(e.message);
               })
             return
           }
@@ -319,8 +309,8 @@ export default class Bot implements BotInterface {
         return slash.toJSON()
       })()]
     })
-    .then(() => log(`$c magenta Registered $$$c cyan ${command.name} $$$c magenta command $$`))
-    .catch(e => error(e))
+    .then(() => BotLogger.log(`$c magenta Registered $$$c cyan ${command.name} $$$c magenta command $$`))
+    .catch(e => BotLogger.error(e))
   }
 
   public registerCommands(args: registerCommandsArgs): void {
@@ -340,52 +330,50 @@ export default class Bot implements BotInterface {
         return slash.toJSON()
       })
     })
-    .then(() => log(`Registered commands ${args.globally ? 'globally' : 'for guild ' + args.guild.name}`))
-    .catch(e => error(e))
+    .then(() => BotLogger.log(`Registered commands ${args.globally ? 'globally' : 'for guild ' + args.guild.name}`))
+    .catch(e => BotLogger.error(e))
   }
 
   private reloadCommand(command: string): commandInterface | undefined {
-    const file = join(__dirname, command);
-    warn(`$c red Deleting $$$c cyan ${parse(command).base}$$ $c red cache$$`);
+    const file = join(process.cwd(), command);
+    BotLogger.warn(`$c red Deleting $$$c cyan ${parse(command).base}$$ $c red cache$$`);
     delete require.cache[require.resolve(file)]
     const cmd: commandInterface = require(file).default;
     try {
       if (cmd === undefined) throw new Error(`Command ${file} has no default export`);
       cmd.name = parse(file).name
-      warn(`$c green Loaded $$$c cyan ${cmd.name}$$ $c yellowBright command$$`);
-    } catch (e) {
-      error(e);
-    }
+      BotLogger.warn(`$c green Loaded $$$c cyan ${cmd.name}$$ $c yellowBright command$$`);
+    } catch (e: any) { BotLogger.error(e.message) }
     return cmd
   }
 
   private reloadEvent(Event: string): event {
-    const file = join(__dirname, Event);
-    warn(`$c red Deleting $$$c cyan ${parse(file).base}$$ $c red cache$$`);
+    const file = join(process.cwd(), Event);
+    BotLogger.warn(`$c red Deleting $$$c cyan ${parse(file).base}$$ $c red cache$$`);
     delete require.cache[require.resolve(file)]
     const event: (...args: unknown[]) => Awaitable<void> = require(file).default;
     try {
       if (event === undefined) throw new Error(`Event ${parse(file).base} has no default export`);
-      log(`$c magentaBright Pushed$$ $c cyan ${parse(file).name}$$ $c magentaBright to event cache$$`);
-    } catch (e) { error(e); }
+      BotLogger.log(`$c magentaBright Pushed$$ $c cyan ${parse(file).name}$$ $c magentaBright to event cache$$`);
+    } catch (e) { BotLogger.error(e); }
     return { run: event, name: parse(file).name as keyof ClientEvents }
   }
 
   public disableEvent(event: keyof ClientEvents): void {
     const isEnabled = this.isEventEnabled[event]
-    if (!isEnabled) error(`$c red Event $$$c cyan ${event} $c red is already disabled$$`)
+    if (!isEnabled) BotLogger.error(`$c red Event $$$c cyan ${event} $c red is already disabled$$`)
     else {
       this.isEventEnabled[event] = false
-      log(`$c red Disabled $$$c cyan ${event}$$ $c red event$$`)
+      BotLogger.log(`$c red Disabled $$$c cyan ${event}$$ $c red event$$`)
     }
   }
 
   public enableEvent(event: keyof ClientEvents): void {
     const isEnabled = this.isEventEnabled[event]
-    if (isEnabled) error(`$c red Event $$$c cyan ${event} $c red is already enabled$$`)
+    if (isEnabled) BotLogger.error(`$c red Event $$$c cyan ${event} $c red is already enabled$$`)
     else {
       this.isEventEnabled[event] = true
-      log(`$c greenBright Enabled $$$c cyan ${event}$$ $c red event$$`)
+      BotLogger.log(`$c greenBright Enabled $$$c cyan ${event}$$ $c red event$$`)
     }
   }
 
@@ -415,22 +403,22 @@ export default class Bot implements BotInterface {
         :
       `${status?.charAt(0).toUpperCase() + status?.slice(1).toLowerCase()}`
 
-      if (presenceData.activities[0].type === 'STREAMING') log(`Setting presence to #c magenta $c black  ${presence} $$##`)
+      if (presenceData.activities[0].type === 'STREAMING') BotLogger.log(`Setting presence to #c magenta $c black  ${presence} $$##`)
       else switch (presenceData.status) {
       case 'online': {
-        log(`Setting presence to #c greenBright $c black  ${presence} $$##`);
+        BotLogger.log(`Setting presence to #c greenBright $c black  ${presence} $$##`);
         break
       }
       case 'idle': {
-        log(`Setting presence to #c yellow $c black  ${presence} $$##`);
+        BotLogger.log(`Setting presence to #c yellow $c black  ${presence} $$##`);
         break
       }
       case 'dnd': {
-        log(`Setting presence to #c red $c black  ${presence} $$##`);
+        BotLogger.log(`Setting presence to #c red $c black  ${presence} $$##`);
         break
       }
       case 'invisible': {
-        log(`Setting presence to #c gray $c whiteBright  ${presence} $$##`);
+        BotLogger.log(`Setting presence to #c gray $c whiteBright  ${presence} $$##`);
         break
       }
       default: break
@@ -440,11 +428,11 @@ export default class Bot implements BotInterface {
 
   public enableDynamic() {
     this.config.dynamicEnabled = true
-    log('$c greenBright Enabled dynamic reload$$')
+    BotLogger.log('$c greenBright Enabled dynamic reload$$')
   }
 
   public disableDynamic() {
     this.config.dynamicEnabled = false
-    log('$c red Disabled dynamic reload$$')
+    BotLogger.log('$c red Disabled dynamic reload$$')
   }
 }

@@ -1,7 +1,7 @@
 import express, { Express, Request, Response as Res } from 'express';
 import JWT from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import log, { warn, error } from './log4';
+import { log, warn, error } from './log4';
 import type { Bot } from 'global';
 
 interface Req extends Request {

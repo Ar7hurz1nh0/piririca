@@ -80,16 +80,13 @@ export interface event { run: (...args: ClientEvents[keyof ClientEvents]) => Awa
 
 export interface getInteractionArgs { [name: string]: string}
 
-export type colors = "black" | "red" | "green" | "yellow" | "blue" | "magenta" | "cyan" | "white" | "gray" | "grey" | "redBright" | "greenBright" | "yellowBright" | "blueBright" | "magentaBright" | "cyanBright" | "whiteBright" | "blackBright"
-export type bgColors = "black" | "red" | "green" | "yellow" | "blue" | "magenta" | "cyan" | "white" | "gray" | "grey" | "redBright" | "greenBright" | "yellowBright" | "blueBright" | "magentaBright" | "cyanBright" | "whiteBright" | "blackBright"
-
 export type registerCommandsArgs = { globally: true, guild?: never } | { globally: false, guild: Guild }
 export type paths = { commands: string, events: string}
 export type auth = { token: string, applicationID: string }
 
 export interface isEventEnabled { [event: string]: boolean }
 
-export class Bot {
+export abstract class Bot {
   public constructor(intents: ClientOptions["intents"][], auth: auth, paths: paths, config: config)
 
   public readonly config: config

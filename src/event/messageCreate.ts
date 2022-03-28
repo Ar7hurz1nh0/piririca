@@ -1,6 +1,8 @@
 import { Message } from "discord.js"
 import { Bot } from "global"
-import log from "../../lib/log4"
+import { Logger } from "../../lib/log4"
+
+const logger = new Logger("messageCreate", { hideFile: true })
 
 export default function (this: Bot, message: Message) {
   if(message.author.bot) return;
@@ -41,5 +43,5 @@ export default function (this: Bot, message: Message) {
       add(`  [${type[i]} ${message.attachments.at(i)?.name}]`)
     }
   }
-  log(reply)
+  logger.log(reply)
 }
