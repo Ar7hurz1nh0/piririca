@@ -2,7 +2,7 @@
   "name": "piririca",
   "version": "0.9.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "dev": "nodemon -x \"ts-node index\" -e ts -i src/cmd -i src/event -i src/test",
     "create": "ts-node lib/create.ts",
